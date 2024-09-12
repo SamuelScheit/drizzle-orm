@@ -1,21 +1,12 @@
-import type { Connection as CallbackConnection } from 'mysql2';
-import type {
-	Connection,
-	FieldPacket,
-	OkPacket,
-	Pool,
-	PoolConnection,
-	QueryOptions,
-	ResultSetHeader,
-	RowDataPacket,
-} from 'mysql2/promise';
-import { once } from 'node:events';
-import { Column } from '~/column.ts';
-import { entityKind, is } from '~/entity.ts';
-import type { Logger } from '~/logger.ts';
-import { NoopLogger } from '~/logger.ts';
-import type { MySqlDialect } from '~/mysql-core/dialect.ts';
-import type { SelectedFieldsOrdered } from '~/mysql-core/query-builders/select.types.ts';
+import type { Connection as CallbackConnection } from "mysql2";
+import type { Connection, FieldPacket, OkPacket, Pool, PoolConnection, QueryOptions, ResultSetHeader, RowDataPacket } from "mysql2/promise";
+import { once } from "node:events";
+import { Column } from "~/column.ts";
+import { entityKind, is } from "~/entity.ts";
+import type { Logger } from "~/logger.ts";
+import { NoopLogger } from "~/logger.ts";
+import type { MySqlDialect } from "~/mysql-core/dialect.ts";
+import type { SelectedFieldsOrdered } from "~/mysql-core/query-builders/select.types.ts";
 import {
 	type Mode,
 	MySqlPreparedQuery,
@@ -26,22 +17,20 @@ import {
 	MySqlTransaction,
 	type MySqlTransactionConfig,
 	type PreparedQueryKind,
-} from '~/mysql-core/session.ts';
-import type { RelationalSchemaConfig, TablesRelationalConfig } from '~/relations.ts';
-import { fillPlaceholders, sql } from '~/sql/sql.ts';
-import type { Query, SQL } from '~/sql/sql.ts';
-import { type Assume, mapResultRow } from '~/utils.ts';
+} from "~/mysql-core/session.ts";
+import type { RelationalSchemaConfig, TablesRelationalConfig } from "~/relations.ts";
+import { fillPlaceholders, sql } from "~/sql/sql.ts";
+import type { Query, SQL } from "~/sql/sql.ts";
+import { type Assume, mapResultRow } from "~/utils.ts";
 
 export type MySql2Client = Pool | Connection;
 
 export type MySqlRawQueryResult = [ResultSetHeader, FieldPacket[]];
 export type MySqlQueryResultType = RowDataPacket[][] | RowDataPacket[] | OkPacket | OkPacket[] | ResultSetHeader;
-export type MySqlQueryResult<
-	T = any,
-> = [T extends ResultSetHeader ? T : T[], FieldPacket[]];
+export type MySqlQueryResult<T = any> = [T extends ResultSetHeader ? T : T[], FieldPacket[]];
 
 export class MySql2PreparedQuery<T extends MySqlPreparedQueryConfig> extends MySqlPreparedQuery<T> {
-	static readonly [entityKind]: string = 'MySql2PreparedQuery';
+	static readonly [entityKind]: string = "MySql2PreparedQuery";
 
 	private rawQuery: QueryOptions;
 	private query: QueryOptions;
@@ -52,18 +41,18 @@ export class MySql2PreparedQuery<T extends MySqlPreparedQueryConfig> extends MyS
 		private params: unknown[],
 		private logger: Logger,
 		private fields: SelectedFieldsOrdered | undefined,
-		private customResultMapper?: (rows: unknown[][]) => T['execute'],
+		private customResultMapper?: (rows: unknown[][]) => T["execute"],
 		// Keys that were used in $default and the value that was generated for them
 		private generatedIds?: Record<string, unknown>[],
 		// Keys that should be returned, it has the column with all properries + key from object
-		private returningIds?: SelectedFieldsOrdered,
+		private returningIds?: SelectedFieldsOrdered
 	) {
 		super();
 		this.rawQuery = {
 			sql: queryString,
 			// rowsAsArray: true,
-			typeCast: function(field: any, next: any) {
-				if (field.type === 'TIMESTAMP' || field.type === 'DATETIME' || field.type === 'DATE') {
+			typeCast: function (field: any, next: any) {
+				if (field.type === "TIMESTAMP" || field.type === "DATETIME" || field.type === "DATE") {
 					return field.string();
 				}
 				return next();
@@ -72,8 +61,8 @@ export class MySql2PreparedQuery<T extends MySqlPreparedQueryConfig> extends MyS
 		this.query = {
 			sql: queryString,
 			rowsAsArray: true,
-			typeCast: function(field: any, next: any) {
-				if (field.type === 'TIMESTAMP' || field.type === 'DATETIME' || field.type === 'DATE') {
+			typeCast: function (field: any, next: any) {
+				if (field.type === "TIMESTAMP" || field.type === "DATETIME" || field.type === "DATE") {
 					return field.string();
 				}
 				return next();
@@ -81,20 +70,19 @@ export class MySql2PreparedQuery<T extends MySqlPreparedQueryConfig> extends MyS
 		};
 	}
 
-	async execute(placeholderValues: Record<string, unknown> = {}): Promise<T['execute']> {
+	async execute(placeholderValues: Record<string, unknown> = {}): Promise<T["execute"]> {
 		const params = fillPlaceholders(this.params, placeholderValues);
 
 		this.logger.logQuery(this.rawQuery.sql, params);
 
-		const { fields, client, rawQuery, query, joinsNotNullableMap, customResultMapper, returningIds, generatedIds } =
-			this;
+		const { fields, client, rawQuery, query, joinsNotNullableMap, customResultMapper, returningIds, generatedIds } = this;
 		if (!fields && !customResultMapper) {
 			const res = await client.query<any>(rawQuery, params);
 			const insertId = res[0].insertId;
 			const affectedRows = res[0].affectedRows;
 			// for each row, I need to check keys from
 			if (returningIds) {
-				const returningResponse = [];
+				const returningResponse = [] as any[];
 				let j = 0;
 				for (let i = insertId; i < insertId + affectedRows; i++) {
 					for (const column of returningIds) {
@@ -125,16 +113,18 @@ export class MySql2PreparedQuery<T extends MySqlPreparedQueryConfig> extends MyS
 			return customResultMapper(rows);
 		}
 
-		return rows.map((row) => mapResultRow<T['execute']>(fields!, row, joinsNotNullableMap));
+		return rows.map((row) => mapResultRow<T["execute"]>(fields!, row, joinsNotNullableMap));
 	}
 
 	async *iterator(
-		placeholderValues: Record<string, unknown> = {},
-	): AsyncGenerator<T['execute'] extends any[] ? T['execute'][number] : T['execute']> {
+		placeholderValues: Record<string, unknown> = {}
+	): AsyncGenerator<T["execute"] extends any[] ? T["execute"][number] : T["execute"]> {
 		const params = fillPlaceholders(this.params, placeholderValues);
-		const conn = ((isPool(this.client) ? await this.client.getConnection() : this.client) as {} as {
-			connection: CallbackConnection;
-		}).connection;
+		const conn = (
+			(isPool(this.client) ? await this.client.getConnection() : this.client) as {} as {
+				connection: CallbackConnection;
+			}
+		).connection;
 
 		const { fields, query, rawQuery, joinsNotNullableMap, client, customResultMapper } = this;
 		const hasRowsMapper = Boolean(fields || customResultMapper);
@@ -146,34 +136,35 @@ export class MySql2PreparedQuery<T extends MySqlPreparedQueryConfig> extends MyS
 			stream.pause();
 		}
 
-		stream.on('data', dataListener);
+		stream.on("data", dataListener);
 
 		try {
-			const onEnd = once(stream, 'end');
-			const onError = once(stream, 'error');
+			const onEnd = once(stream, "end");
+			const onError = once(stream, "error");
 
 			while (true) {
 				stream.resume();
-				const row = await Promise.race([onEnd, onError, new Promise((resolve) => stream.once('data', resolve))]);
+				const row = await Promise.race([onEnd, onError, new Promise((resolve) => stream.once("data", resolve))]);
 				if (row === undefined || (Array.isArray(row) && row.length === 0)) {
 					break;
-				} else if (row instanceof Error) { // eslint-disable-line no-instanceof/no-instanceof
+				} else if (row instanceof Error) {
+					// eslint-disable-line no-instanceof/no-instanceof
 					throw row;
 				} else {
 					if (hasRowsMapper) {
 						if (customResultMapper) {
 							const mappedRow = customResultMapper([row as unknown[]]);
-							yield (Array.isArray(mappedRow) ? mappedRow[0] : mappedRow);
+							yield Array.isArray(mappedRow) ? mappedRow[0] : mappedRow;
 						} else {
 							yield mapResultRow(fields!, row as unknown[], joinsNotNullableMap);
 						}
 					} else {
-						yield row as T['execute'];
+						yield row as T["execute"];
 					}
 				}
 			}
 		} finally {
-			stream.off('data', dataListener);
+			stream.off("data", dataListener);
 			if (isPool(client)) {
 				conn.end();
 			}
@@ -186,11 +177,13 @@ export interface MySql2SessionOptions {
 	mode: Mode;
 }
 
-export class MySql2Session<
-	TFullSchema extends Record<string, unknown>,
-	TSchema extends TablesRelationalConfig,
-> extends MySqlSession<MySqlQueryResultHKT, MySql2PreparedQueryHKT, TFullSchema, TSchema> {
-	static readonly [entityKind]: string = 'MySql2Session';
+export class MySql2Session<TFullSchema extends Record<string, unknown>, TSchema extends TablesRelationalConfig> extends MySqlSession<
+	MySqlQueryResultHKT,
+	MySql2PreparedQueryHKT,
+	TFullSchema,
+	TSchema
+> {
+	static readonly [entityKind]: string = "MySql2Session";
 
 	private logger: Logger;
 	private mode: Mode;
@@ -199,7 +192,7 @@ export class MySql2Session<
 		private client: MySql2Client,
 		dialect: MySqlDialect,
 		private schema: RelationalSchemaConfig<TSchema> | undefined,
-		private options: MySql2SessionOptions,
+		private options: MySql2SessionOptions
 	) {
 		super(dialect);
 		this.logger = options.logger ?? new NoopLogger();
@@ -209,9 +202,9 @@ export class MySql2Session<
 	prepareQuery<T extends MySqlPreparedQueryConfig>(
 		query: Query,
 		fields: SelectedFieldsOrdered | undefined,
-		customResultMapper?: (rows: unknown[][]) => T['execute'],
+		customResultMapper?: (rows: unknown[][]) => T["execute"],
 		generatedIds?: Record<string, unknown>[],
-		returningIds?: SelectedFieldsOrdered,
+		returningIds?: SelectedFieldsOrdered
 	): PreparedQueryKind<MySql2PreparedQueryHKT, T> {
 		// Add returningId fields
 		// Each driver gets them from response from database
@@ -223,7 +216,7 @@ export class MySql2Session<
 			fields,
 			customResultMapper,
 			generatedIds,
-			returningIds,
+			returningIds
 		) as PreparedQueryKind<MySql2PreparedQueryHKT, T>;
 	}
 
@@ -237,8 +230,8 @@ export class MySql2Session<
 			sql: query,
 			values: params,
 			rowsAsArray: true,
-			typeCast: function(field: any, next: any) {
-				if (field.type === 'TIMESTAMP' || field.type === 'DATETIME' || field.type === 'DATE') {
+			typeCast: function (field: any, next: any) {
+				if (field.type === "TIMESTAMP" || field.type === "DATETIME" || field.type === "DATE") {
 					return field.string();
 				}
 				return next();
@@ -255,22 +248,17 @@ export class MySql2Session<
 
 	override async transaction<T>(
 		transaction: (tx: MySql2Transaction<TFullSchema, TSchema>) => Promise<T>,
-		config?: MySqlTransactionConfig,
+		config?: MySqlTransactionConfig
 	): Promise<T> {
 		const session = isPool(this.client)
-			? new MySql2Session(
-				await this.client.getConnection(),
-				this.dialect,
-				this.schema,
-				this.options,
-			)
+			? new MySql2Session(await this.client.getConnection(), this.dialect, this.schema, this.options)
 			: this;
 		const tx = new MySql2Transaction<TFullSchema, TSchema>(
 			this.dialect,
 			session as MySqlSession<any, any, any, any>,
 			this.schema,
 			0,
-			this.mode,
+			this.mode
 		);
 		if (config) {
 			const setTransactionConfigSql = this.getSetTransactionSQL(config);
@@ -301,17 +289,11 @@ export class MySql2Transaction<
 	TFullSchema extends Record<string, unknown>,
 	TSchema extends TablesRelationalConfig,
 > extends MySqlTransaction<MySql2QueryResultHKT, MySql2PreparedQueryHKT, TFullSchema, TSchema> {
-	static readonly [entityKind]: string = 'MySql2Transaction';
+	static readonly [entityKind]: string = "MySql2Transaction";
 
 	override async transaction<T>(transaction: (tx: MySql2Transaction<TFullSchema, TSchema>) => Promise<T>): Promise<T> {
 		const savepointName = `sp${this.nestedIndex + 1}`;
-		const tx = new MySql2Transaction<TFullSchema, TSchema>(
-			this.dialect,
-			this.session,
-			this.schema,
-			this.nestedIndex + 1,
-			this.mode,
-		);
+		const tx = new MySql2Transaction<TFullSchema, TSchema>(this.dialect, this.session, this.schema, this.nestedIndex + 1, this.mode);
 		await tx.execute(sql.raw(`savepoint ${savepointName}`));
 		try {
 			const result = await transaction(tx);
@@ -325,7 +307,7 @@ export class MySql2Transaction<
 }
 
 function isPool(client: MySql2Client): client is Pool {
-	return 'getConnection' in client;
+	return "getConnection" in client;
 }
 
 export interface MySql2QueryResultHKT extends MySqlQueryResultHKT {
@@ -333,5 +315,5 @@ export interface MySql2QueryResultHKT extends MySqlQueryResultHKT {
 }
 
 export interface MySql2PreparedQueryHKT extends MySqlPreparedQueryHKT {
-	type: MySql2PreparedQuery<Assume<this['config'], MySqlPreparedQueryConfig>>;
+	type: MySql2PreparedQuery<Assume<this["config"], MySqlPreparedQueryConfig>>;
 }

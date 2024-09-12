@@ -11,9 +11,16 @@
 		"pack": "(cd dist && npm pack --pack-destination ..) && rm -f package.tgz && mv *.tgz package.tgz",
 		"publish": "npm publish package.tgz"
 	},
-	"main": "./index.cjs",
-	"module": "./index.js",
-	"types": "./index.d.ts",
+	"exports": {
+		".": "./dist/index.cjs",
+		"./*": "./dist/*.cjs",
+		"./*.ts": "./dist/*.ts",
+		"./sqlite-core": "./dist/sqlite-core/index.cjs",
+		"./better-sqlite3": "./dist/better-sqlite3/index.cjs",
+		"./expo-sqlite3": "./dist/expo-sqlite3/index.cjs",
+		"./op-sqlite": "./dist/op-sqlite/index.cjs"
+	},
+	"types": "./dist/index.d.ts",
 	"sideEffects": false,
 	"publishConfig": {
 		"provenance": true
@@ -176,7 +183,6 @@
 		"@types/sql.js": "^1.4.4",
 		"@vercel/postgres": "^0.8.0",
 		"@xata.io/client": "^0.29.3",
-		"better-sqlite3": "^8.4.0",
 		"bun-types": "^0.6.6",
 		"cpy": "^10.1.0",
 		"expo-sqlite": "^13.2.0",
@@ -190,10 +196,14 @@
 		"sql.js": "^1.8.0",
 		"sqlite3": "^5.1.2",
 		"tslib": "^2.5.2",
+		"tsup": "^8.2.4",
 		"tsx": "^3.12.7",
 		"vite-tsconfig-paths": "^4.3.2",
 		"vitest": "^1.6.0",
 		"zod": "^3.20.2",
 		"zx": "^7.2.2"
+	},
+	"dependencies": {
+		"glob": "^11.0.0"
 	}
 }

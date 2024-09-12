@@ -1,14 +1,15 @@
-import { Prisma } from '@prisma/client';
+// @ts-ignore
+import { Prisma } from "@prisma/client";
 
-import type { Logger } from '~/logger.ts';
-import { DefaultLogger } from '~/logger.ts';
-import { BaseSQLiteDatabase, SQLiteAsyncDialect } from '~/sqlite-core/index.ts';
-import type { DrizzleConfig } from '~/utils.ts';
-import { PrismaSQLiteSession } from './session.ts';
+import type { Logger } from "~/logger.ts";
+import { DefaultLogger } from "~/logger.ts";
+import { BaseSQLiteDatabase, SQLiteAsyncDialect } from "~/sqlite-core/index.ts";
+import type { DrizzleConfig } from "~/utils.ts";
+import { PrismaSQLiteSession } from "./session.ts";
 
-export type PrismaSQLiteDatabase = BaseSQLiteDatabase<'async', []>;
+export type PrismaSQLiteDatabase = BaseSQLiteDatabase<"async", []>;
 
-export type PrismaSQLiteConfig = Omit<DrizzleConfig, 'schema'>;
+export type PrismaSQLiteConfig = Omit<DrizzleConfig, "schema">;
 
 export function drizzle(config: PrismaSQLiteConfig = {}) {
 	const dialect = new SQLiteAsyncDialect();
@@ -23,9 +24,9 @@ export function drizzle(config: PrismaSQLiteConfig = {}) {
 		const session = new PrismaSQLiteSession(client, dialect, { logger });
 
 		return client.$extends({
-			name: 'drizzle',
+			name: "drizzle",
 			client: {
-				$drizzle: new BaseSQLiteDatabase('async', dialect, session, undefined) as PrismaSQLiteDatabase,
+				$drizzle: new BaseSQLiteDatabase("async", dialect, session, undefined) as PrismaSQLiteDatabase,
 			},
 		});
 	});

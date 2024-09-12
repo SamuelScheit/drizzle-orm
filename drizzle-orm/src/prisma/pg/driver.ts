@@ -1,17 +1,18 @@
-import type { PrismaClient } from '@prisma/client/extension';
+import type { PrismaClient } from "@prisma/client/extension";
 
-import { Prisma } from '@prisma/client';
+// @ts-ignore
+import { Prisma } from "@prisma/client";
 
-import { entityKind } from '~/entity.ts';
-import type { Logger } from '~/logger.ts';
-import { DefaultLogger } from '~/logger.ts';
-import { PgDatabase, PgDialect } from '~/pg-core/index.ts';
-import type { DrizzleConfig } from '~/utils.ts';
-import type { PrismaPgQueryResultHKT } from './session.ts';
-import { PrismaPgSession } from './session.ts';
+import { entityKind } from "~/entity.ts";
+import type { Logger } from "~/logger.ts";
+import { DefaultLogger } from "~/logger.ts";
+import { PgDatabase, PgDialect } from "~/pg-core/index.ts";
+import type { DrizzleConfig } from "~/utils.ts";
+import type { PrismaPgQueryResultHKT } from "./session.ts";
+import { PrismaPgSession } from "./session.ts";
 
 export class PrismaPgDatabase extends PgDatabase<PrismaPgQueryResultHKT, Record<string, never>> {
-	static readonly [entityKind]: string = 'PrismaPgDatabase';
+	static readonly [entityKind]: string = "PrismaPgDatabase";
 
 	constructor(client: PrismaClient, logger: Logger | undefined) {
 		const dialect = new PgDialect();
@@ -19,7 +20,7 @@ export class PrismaPgDatabase extends PgDatabase<PrismaPgQueryResultHKT, Record<
 	}
 }
 
-export type PrismaPgConfig = Omit<DrizzleConfig, 'schema'>;
+export type PrismaPgConfig = Omit<DrizzleConfig, "schema">;
 
 export function drizzle(config: PrismaPgConfig = {}) {
 	let logger: Logger | undefined;
@@ -31,7 +32,7 @@ export function drizzle(config: PrismaPgConfig = {}) {
 
 	return Prisma.defineExtension((client) => {
 		return client.$extends({
-			name: 'drizzle',
+			name: "drizzle",
 			client: {
 				$drizzle: new PrismaPgDatabase(client, logger),
 			},

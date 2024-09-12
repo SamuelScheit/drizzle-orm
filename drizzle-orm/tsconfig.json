@@ -3,11 +3,19 @@
 	"compilerOptions": {
 		"baseUrl": ".",
 		"paths": {
-			"~/*": ["src/*"]
+			"~/*": [
+				"src/*"
+			]
 		},
 		"declaration": true,
 		"outDir": "dist",
-		"noEmit": true
+		"noEmit": true,
+		"noImplicitOverride": false,
+		"noImplicitAny": false,
+		"strict": false,
 	},
-	"include": ["src", "scripts"]
+	"include": [
+		"src",
+		"scripts"
+	]
 }

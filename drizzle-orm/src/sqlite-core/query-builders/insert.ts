@@ -21,6 +21,7 @@ export interface SQLiteInsertConfig<TTable extends SQLiteTable = SQLiteTable> {
 	withList?: Subquery[];
 	onConflict?: SQL;
 	returning?: SelectedFieldsOrdered;
+	replaceInto?: boolean;
 }
 
 export type SQLiteInsertValue<TTable extends SQLiteTable> = Simplify<
@@ -276,6 +277,29 @@ export class SQLiteInsertBase<
 			const whereSql = config.where ? sql` where ${config.where}` : sql``;
 			this.config.onConflict = sql`${targetSql} do nothing${whereSql}`;
 		}
+		return this;
+	}
+
+	/**
+	 * Changes the INSERT INTO statement to REPLACE INTO.
+	 *
+	 * Calling this method will replace the existing row if there's a conflict with the primary key.
+	 *
+	 * @example
+	 * ```ts
+	 * // Insert one row and cancel the insert if there's a conflict
+	 * await db.insert(cars)
+	 *   .values({ id: 1, brand: 'BMW' })
+	 *   .replaceInto();
+	 *
+	 * // Explicitly specify conflict target
+	 * await db.insert(cars)
+	 *   .values({ id: 1, brand: 'BMW' })
+	 *   .replaceInto();
+	 * ```
+	 */
+	replaceInto(): this {
+		this.config.replaceInto = true;
 		return this;
 	}
 
